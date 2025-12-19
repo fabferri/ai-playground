@@ -82,6 +82,5 @@ Generated images are saved in the `images/` directory with the following naming 
 - All scripts display generated images using the system's default image viewer
 
 
-## License
-
-This is a sample project for educational purposes.
+`Tags: Azure OpenAI, gpt-image-1` <br>
+`date: 19-12-2025` <br>
