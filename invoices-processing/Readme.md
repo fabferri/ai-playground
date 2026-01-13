@@ -771,3 +771,7 @@ response = client.chat.completions.create(
 ---
 
 `date: 13-01-2026` <br>
+
+## License
+
+This project is licensed under the [MIT License](../LICENSE)
