@@ -1,0 +1,22 @@
+# Azure AI Foundry Invoice RAG Project Dependencies
+
+# Environment variables
+python-dotenv
+
+# Azure AI Document Intelligence
+azure-ai-documentintelligence
+
+# Azure AI Search
+azure-search-documents
+
+# Azure OpenAI
+openai
+
+# Async HTTP client (required for async Azure SDK operations)
+aiohttp
+
+# PDF generation
+reportlab
+
+# Core Azure libraries
+azure-core
