@@ -1,4 +1,4 @@
-# # Invoice Processing with Azure AI - Setup Guide
+# Invoice Processing with Azure AI - Setup Guide
 
 ## Prerequisites: Python Environment
 
@@ -6,7 +6,7 @@
 - pip package manager
 - python virtual enviroment
 
-## Step 0: Run the setup_azure_resources.ps1
+## Step 1: Run the setup_azure_resources.ps1
 
 The PowerShell script `setup_azure_resources.ps1` automates the Azure resource provisioning:
 
@@ -66,13 +66,13 @@ az cognitiveservices account keys list --name doc-intel-invoice-rag-$tail --reso
 
 **Note**: The `setup_azure_resources.ps1` script deploys **gpt-5.1** by default.
 
-## Step 1: Install Dependencies in virtual envirnment
+## Step 2: Install Dependencies in virtual envirnment
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Step 2: check endpoints and keys to access to Azure Resources
+## Step 3: check endpoints and keys to access to Azure Resources
 
 Correct execution of **setup_azure_resources.ps1** should fill in the `.env` with all variables required to access to Azure resources:
 
@@ -97,7 +97,7 @@ INVOICES_FOLDER=invoices
 MANIFEST_FILE=invoices/manifest_invoices.json
 ```
 
-## Step 3: Prepare Your Invoice Files
+## Step 4: Prepare Your Invoice Files
 
 Check if the invoice PDFs are in the `invoices` folder. <br>
 in case the `invoices` folder is empty, generate the test invoices:
@@ -144,7 +144,7 @@ python generate_manifest.py
 python generate_manifest.py
 ```
 
-## Step 4: Run the Extraction and Indexing
+## Step 5: Run the Extraction and Indexing
 
 Execute the main script to:
 
@@ -156,7 +156,7 @@ Execute the main script to:
 python extract_and_index.py
 ```
 
-## Step 5: Understanding the Workflow
+## Step 6: Understanding the Workflow
 
 ### 1. Invoice Extraction
 
@@ -204,3 +204,8 @@ Based on this RAG use case, here are recommended models:
 | **gpt-5.1** | Advanced reasoning, best quality (default in setup script) | 200K | High |
 | **gpt-4o**  | Balanced performance, good for RAG | 128K | High |
 | **gpt-4o-mini** | Fast responses, cost-effective | 128K | Very High |
+
+
+---
+
+`date: 13-01-2026` <br>

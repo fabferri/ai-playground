@@ -350,19 +350,19 @@ This solution is based on three Azure AI services to achieve intelligent documen
    ```
 
 **What it does:**
-1. Reads invoices from `invoices/` folder
-2. Calls Document Intelligence API to extract invoice data programmatically for each PDF
-3. Extracts structured data (invoice ID, vendor, totals, etc.)
-4. Creates Azure AI Search index
-5. Uploads documents to Azure AI Search index
 
-**Output:** 
-- `invoices/extraction_invoices.jsonl` (extracted data)
+   1. Reads invoices from `invoices/` folder
+   2. Calls Document Intelligence API to extract invoice data programmatically for each PDF
+   3. Extracts structured data (invoice ID, vendor, totals, etc.)
+   4. Creates Azure AI Search index
+   5. Uploads documents to Azure AI Search index
+
+**Output:**
 - Azure AI Search index with all invoices
 
 3. **Query Invoices**:
    ```powershell
-   # Simple search without AI
+   # Simple Azure AI Search - verifying indexing
    python query.py
    
    # RAG-powered chatbot (Interactive)
@@ -371,6 +371,8 @@ This solution is based on three Azure AI services to achieve intelligent documen
    # Demo mode (single query)
    python chatbot.py --demo
    ```
+
+See [Setup guide](Setup-guide.md) for detailed Azure setup instructions
 
 ### Detailed Steps
 
@@ -754,87 +756,18 @@ response = client.chat.completions.create(
 
 3. **Debug first** - Inspect one document completely before batch processing
 
-4. **Direct API > Agent framework** - For this use case, simpler is better
+4. **Direct API** - For this use case, simpler is better
 
 5. **Index schema is immutable** - Delete and recreate if schema needs changes
 
 ### Current Limitations
 
 - Only keyword search (no vector/semantic search)
-- Processes first 5 invoices by default
+- Processes 10 invoices by default
 - No embeddings generation
 - No conversation memory persistence
 - No filtering UI
 
+---
 
-
-## Next Steps
-
-### Getting Started
-
-1. **Generate Invoice PDFs**:
-   ```powershell
-   python generate_realistic_invoices.py
-   ```
-   Press Enter to generate first 5 invoices for testing
-
-2. **Extract and Index**:
-   ```powershell
-   python extract_and_index.py
-   ```
-   Extracts invoice data using Document Intelligence and indexes in Azure AI Search
-
-3. **Verify Indexing**:
-   ```powershell
-   python query.py
-   ```
-   View all indexed invoices and verify totals are correct
-
-4. **Test the Chatbot**:
-   ```powershell
-   # Demo mode - single query
-   python chatbot.py --demo
-   
-   # Interactive mode - conversation
-   python chatbot.py
-   ```
-
-### Scaling Up
-
-To process all 120 invoices:
-1. Edit `extract_and_index.py` line 50
-2. Change: `pdf_files = manifest_data.get('pdf_files', [])[:5]`
-3. To: `pdf_files = manifest_data.get('pdf_files', [])`
-4. Run: `python extract_and_index.py`
-
-### Future Enhancements
-
-1. **Add vector search with embeddings:**
-   - Add `content_vector` field to index schema
-   - Generate embeddings using Azure OpenAI text-embedding-ada-002
-   - Populate vector field during indexing
-   - Use hybrid search (keyword + vector) for semantic queries
-
-2. **Process all 120 invoices** with batch processing and progress tracking
-
-3. **Add advanced filtering:**
-   - By vendor name
-   - By date range
-   - By amount range
-   - By currency type
-
-4. **Implement conversation persistence:**
-   - Save chat history to database
-   - Resume previous conversations
-   - Track user sessions
-
-5. **Add validation against manifest data** for quality assurance
-
-### Additional Resources
-
-
-- **Setup Guide:** See [Setup-guide.md](Setup-guide.md) for detailed Azure setup instructions
-- **Azure Documentation:**
-  - [Document Intelligence Invoice Model](https://learn.microsoft.com/azure/ai-services/document-intelligence/concept-invoice)
-  - [Azure AI Search](https://learn.microsoft.com/azure/search/)
-  - [Azure OpenAI Service](https://learn.microsoft.com/azure/ai-services/openai/)
+`date: 13-01-2026` <br>

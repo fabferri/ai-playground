@@ -1,3 +1,10 @@
+"""
+This script queries and displays invoices from an Azure AI Search index.
+It connects to Azure AI Search using credentials from environment variables,
+retrieves all indexed invoices, and prints them in a formatted table showing
+invoice ID, vendor, date, and total amount.
+"""
+
 import os
 from dotenv import load_dotenv
 from azure.search.documents import SearchClient
