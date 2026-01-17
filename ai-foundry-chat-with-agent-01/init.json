@@ -1,0 +1,7 @@
+{
+  "subscription_name": "Hybrid-PM-Test-2",
+  "resource_group_name": "foundry-04",
+  "foundry_resource_name": "fabfoundryresource4",
+  "foundry_project_name": "project101",
+  "location": "uksouth"
+}

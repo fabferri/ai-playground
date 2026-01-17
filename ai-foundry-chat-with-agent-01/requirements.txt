@@ -1,0 +1,6 @@
+azure-identity 
+azure-mgmt-cognitiveservices~=13.7.0b1
+azure-mgmt-subscription
+azure-mgmt-resource
+openai 
+azure-ai-projects 
