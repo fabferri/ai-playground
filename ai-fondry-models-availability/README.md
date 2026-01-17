@@ -19,9 +19,9 @@ editor="fabferri"/>
 
 A Python script to check the availability of few Azure AI models across different regions.
 
-## Features
+## <a name="features"></a>Features
 
-### Script core capabilities
+### <a name="scipt capabilities"></a>Script core capabilities
 
 - **Model Discovery**: Dynamically discovers OpenAI models using Azure APIs
 - **Multi-Region Support**: Check availability across all Azure regions
@@ -29,14 +29,14 @@ A Python script to check the availability of few Azure AI models across differen
 - **Multiple Output Formats**: Console (with colors) and JSON
 - **Error Handling**: Graceful handling of API limits and network issues
 
-### Easy User Experience
+### <a name="user-experience"></a>Easy User Experience
 
 - **Interactive Mode**: User-friendly menu system for easy model selection
 - **Predefined Collections**: Quick access to common model groups (GPT, Llama, etc.)
 - **Interrupt Handling**: Clean exit with Ctrl+C during long operations
 - **Comprehensive Help**: Usage examples and troubleshooting guides
 
-### Supported Model Types
+### <a name="model-list"></a>Supported Model Types
 
 | Model                         | Type           | Provider   | Cost (Relative)           | Performance                          | Recommended Usage                                      |
 | ----------------------------- | -------------- | ---------- | ------------------------- | ------------------------------------ | ------------------------------------------------------ |
@@ -49,13 +49,13 @@ A Python script to check the availability of few Azure AI models across differen
 | claude-opus-4-5               | Chat LLM       | Anthropic  | High                      | Best (complex reasoning)             | Complex reasoning, research, enterprise AI             |
 | claude-haiku-4-5              | Chat LLM       | Anthropic  | Low                       | Good (fast, efficient)               | Real-time chat, high-volume, cost-sensitive apps       |
 
-## Prerequisites
+## <a name="prerequisite"></a>Prerequisites
 
 - Python 3.13 or higher
 - Azure CLI installed and configured (`az login`)
 - Appropriate Azure permissions to list AI/ML resources
 
-## Installation & Setup
+## <a name="setup"></a>Installation & Setup
 
 ```bash
 # Create virtual environment
@@ -72,7 +72,7 @@ pip install -r requirements.txt
 ```
 in the file **requirements.txt** are listed the Azure SDK packages
 
-## Usage
+##  <a name="usage"></a>Usage
 
 ### Command Line Options
 
@@ -164,7 +164,7 @@ Available interactive options:
 7. **Custom selection** - Choose specific models and regions
 
 
-## Interrupt Handling
+##  <a name="terminal-interrupt"></a>Interrupt Handling
 
 ### Graceful Exit with Ctrl+C
 
@@ -175,7 +175,7 @@ The tool supports clean interruption during long-running operations:
 - **Resource Cleanup**: Proper cleanup of network connections
 - **Partial Results**: Display results collected before interruption
 
-## Troubleshooting
+##  <a name="troubleshooting"></a>Troubleshooting
 
 ### Common Issues
 
