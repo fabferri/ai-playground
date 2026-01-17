@@ -6,7 +6,7 @@ It helps validate model availability before attempting deployments to avoid fail
 
 Key Features:
 - Check model availability by region
-- Support for multiple model types (GPT-4o, GPT-4, GPT-3.5-Turbo, etc.)
+- Support for multiple model types (GPT-5.1, Llama 4, Claude 4.5, etc.)
 - Detailed availability reports with deployment recommendations
 - Interactive region and model selection
 - Export results to JSON for documentation
@@ -17,10 +17,10 @@ Usage Examples:
    python model-availability-check.py --region "uksouth"
 
 2. Check specific models in multiple regions:
-   python model-availability-check.py --models "gpt-4o,gpt-4o-mini" --regions "uksouth,westus,eastus"
+   python model-availability-check.py --models "gpt-5.1,gpt-5.1-mini" --regions "uksouth,westus,eastus"
 
 2b. Check Llama models:
-   python model-availability-check.py --models "llama-3.3-70b-instruct,llama-4-scout-17b-instruct" --regions "uksouth,westus"
+   python model-availability-check.py --models "llama-4-scout-17b-instruct,llama-4-maverick-17b-instruct" --regions "uksouth,westus"
 
 3. Check ALL models in ALL regions (comprehensive):
    python model-availability-check.py --all
@@ -29,7 +29,7 @@ Usage Examples:
    python model-availability-check.py --all-models --regions "uksouth,westus,eastus"
 
 5. Check specific models in ALL regions:
-   python model-availability-check.py --all-regions --models "gpt-4o,llama-3.3-70b-instruct"
+   python model-availability-check.py --all-regions --models "gpt-5.1,llama-4-scout-17b-instruct"
 
 6. Interactive mode:
    python model-availability-check.py --interactive
@@ -98,77 +98,71 @@ logger.info(f"Python version: {sys.version}")
 logger.info("="*80)
 
 # Model configurations to check
+# Updated January 2026 - Removed retired models (GPT-3.5, GPT-4, GPT-4o series)
 MODELS_TO_CHECK = {
-    "gpt-4o": {
-        "name": "gpt-4o",
-        "version": "2024-11-20",
+    # GPT-5 Series - Latest generation
+    "gpt-5.1": {
+        "name": "gpt-5.1",
+        "version": "2025-12-01",
         "format": "OpenAI",
         "provider": "Microsoft",
-        "description": "GPT-4o - Latest multimodal model"
+        "description": "GPT-5.1 - Latest flagship model with advanced reasoning"
     },
-    "gpt-4o-mini": {
-        "name": "gpt-4o-mini", 
-        "version": "2024-07-18",
+    "gpt-5.1-mini": {
+        "name": "gpt-5.1-mini",
+        "version": "2025-12-01",
         "format": "OpenAI",
         "provider": "Microsoft",
-        "description": "GPT-4o Mini - Cost-effective high-performance model"
+        "description": "GPT-5.1 Mini - Cost-effective next-gen model"
     },
-    "gpt-4": {
-        "name": "gpt-4",
-        "version": "1106-preview",
-        "format": "OpenAI", 
-        "provider": "Microsoft",
-        "description": "GPT-4 - Advanced reasoning model"
-    },
-    "gpt-4-turbo": {
-        "name": "gpt-4",
-        "version": "turbo-2024-04-09",
-        "format": "OpenAI",
-        "provider": "Microsoft", 
-        "description": "GPT-4 Turbo - Faster GPT-4 variant"
-    },
-    "gpt-35-turbo": {
-        "name": "gpt-35-turbo",
-        "version": "0125",
-        "format": "OpenAI",
-        "provider": "Microsoft",
-        "description": "GPT-3.5 Turbo - Fast and efficient model"
-    },
-    "text-embedding-3-large": {
-        "name": "text-embedding-3-large",
+    
+    # Embedding Models
+    "text-embedding-4-large": {
+        "name": "text-embedding-4-large",
         "version": "1",
         "format": "OpenAI",
         "provider": "Microsoft", 
-        "description": "Text Embedding 3 Large - Advanced embeddings model"
+        "description": "Text Embedding 4 Large - Latest advanced embeddings model"
     },
     
-    # Llama Models available in Azure AI Foundry
-    # Note: Llama 3.3 is supported
-    # These models are deployed via Serverless API endpoints in Azure AI Foundry
-    
-    "llama-3.3-70b-instruct": {
-        "name": "Llama-3.3-70B-Instruct",
-        "version": "latest",
-        "format": "Serverless",
-        "provider": "Meta",
-        "description": "Llama 3.3 70B Instruct - High-performance instruction-following model (successor to Llama 3.1)"
-    },
-    
-    # Llama 4 Models - Early access variants
+    # Llama 4 Models - Current generation in Azure AI Foundry
+    # These models are deployed via Serverless API endpoints
     "llama-4-scout-17b-instruct": {
         "name": "Llama-4-Scout-17B-16E-Instruct", 
         "version": "latest",
         "format": "Serverless",
         "provider": "Meta",
-        "description": "Llama 4 Scout 17B - Early access Llama 4 variant optimized for efficiency"
+        "description": "Llama 4 Scout 17B - Llama 4 variant optimized for efficiency"
     },
-    
     "llama-4-maverick-17b-instruct": {
         "name": "Llama-4-Maverick-17B-128E-Instruct-FP8",
         "version": "latest", 
         "format": "Serverless",
         "provider": "Meta",
         "description": "Llama 4 Maverick 17B - FP8 optimized Llama 4 variant for high throughput"
+    },
+    
+    # Claude Models - Anthropic models via Azure AI Foundry
+    "claude-sonnet-4-5": {
+        "name": "claude-sonnet-4-5",
+        "version": "latest",
+        "format": "Serverless",
+        "provider": "Anthropic",
+        "description": "Claude Sonnet 4.5 - Anthropic's latest balanced model for intelligence and speed"
+    },
+    "claude-opus-4-5": {
+        "name": "claude-opus-4-5",
+        "version": "latest",
+        "format": "Serverless",
+        "provider": "Anthropic",
+        "description": "Claude Opus 4.5 - Anthropic's most capable model for complex reasoning"
+    },
+    "claude-haiku-4-5": {
+        "name": "claude-haiku-4-5",
+        "version": "latest",
+        "format": "Serverless",
+        "provider": "Anthropic",
+        "description": "Claude Haiku 4.5 - Anthropic's fastest and most cost-effective model"
     }
 }
 
@@ -728,7 +722,7 @@ def interactive_model_selection() -> List[str]:
     
     print("Selection options:")
     print(f"{len(model_keys) + 1}. All models")
-    print(f"{len(model_keys) + 2}. Common models (gpt-4o, gpt-4o-mini, llama-3.3-70b-instruct)")
+    print(f"{len(model_keys) + 2}. Common models (gpt-5.1, gpt-5.1-mini, llama-4-scout-17b-instruct)")
     print(f"{len(model_keys) + 3}. Llama models only")
     
     while True:
@@ -739,7 +733,7 @@ def interactive_model_selection() -> List[str]:
                 return list(MODELS_TO_CHECK.keys())
             
             if user_input.lower() == 'common' or user_input == str(len(model_keys) + 2):
-                return ['gpt-4o', 'gpt-4o-mini', 'llama-3.3-70b-instruct']
+                return ['gpt-5.1', 'gpt-5.1-mini', 'llama-4-scout-17b-instruct']
             
             if user_input.lower() == 'llama' or user_input == str(len(model_keys) + 3):
                 return [key for key in MODELS_TO_CHECK.keys() if 'llama' in key.lower()]
@@ -953,12 +947,12 @@ def main():
             logger.info(f"ALL MODELS MODE: Checking all models in regions: {regions_to_check}")
         elif args.all_regions:
             # Check specified models in all regions
-            models_to_check = args.models.split(',') if args.models else ['gpt-4o', 'gpt-4o-mini', 'llama-3.3-70b-instruct']
+            models_to_check = args.models.split(',') if args.models else ['gpt-5.1', 'gpt-5.1-mini', 'llama-4-scout-17b-instruct']
             regions_to_check = list(AZURE_REGIONS.keys())
             print(f"Global Check: {len(models_to_check)} models across {len(regions_to_check)} regions")
             logger.info(f"ALL REGIONS MODE: Checking models {models_to_check} in all regions")
         else:
-            models_to_check = args.models.split(',') if args.models else ['gpt-4o', 'gpt-4o-mini', 'llama-3.3-70b-instruct']
+            models_to_check = args.models.split(',') if args.models else ['gpt-5.1', 'gpt-5.1-mini', 'llama-4-scout-17b-instruct']
             regions_to_check = args.regions.split(',') if args.regions else ['uksouth']
         
         # Clean up inputs
