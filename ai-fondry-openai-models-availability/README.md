@@ -1,6 +1,6 @@
 <properties
-pageTitle= 'Azure OpenAI Model Availability Checker'
-description= "Azure OpenAI Model Availability Checker"
+pageTitle= 'AI Foundry Model Availability Checker'
+description= "AI Foundry Model Availability Checker"
 documentationcenter= "https://github.com/fabferri"
 services="AI Foundry"
 authors="fabferri"
@@ -15,9 +15,9 @@ editor="fabferri"/>
    ms.date="01/17/2026"
    ms.author="fabferri" />
 
-# Azure OpenAI Model Availability Checker
+# AI Foundry Model Availability Checker
 
-A Python script to check the availability of Azure OpenAI models across different regions. This tool helps you identify which OpenAI models are available in specific Azure regions for your projects.
+A Python script to check the availability of few Azure AI models across different regions.
 
 ## Features
 
