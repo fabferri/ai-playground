@@ -4,8 +4,8 @@ This project demonstrates image generation using Azure OpenAI's DALL-E models.
 
 ## Files
 
-- **aoai-app.py** - Generates images from text prompts using DALL-E 3. 
-- **aoai-solution.py** - Demonstrates advanced DALL-E 3 usage with metaprompts for content safety.
+- **gen-app.py** - Generates images from text prompts using DALL-E 3. 
+- **gen-solution.py** - Demonstrates advanced DALL-E 3 usage with metaprompts for content safety.
 
 ## Requirements
 
