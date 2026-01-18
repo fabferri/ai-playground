@@ -9,4 +9,5 @@
 | [car-plates-identification](./car-plates-identification/README.md) | Car plates identification |
 | [dall-e-3](./dall-e-3/README.md) | DALL-E 3 image generation |
 | [gpt-image-1](./gpt-image-1/README.md) | GPT image generation |
+| [image-analysis-dense-caption](./image-analysis-dense-caption/Readme.md) | Image analysis with dense caption |
 | [invoices-processing](./invoices-processing/Readme.md) | Invoices processing |
