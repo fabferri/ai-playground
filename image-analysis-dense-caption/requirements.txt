@@ -1,0 +1,4 @@
+azure-ai-vision-imageanalysis
+azure-core
+python-dotenv
+pillow
