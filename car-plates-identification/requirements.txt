@@ -1,0 +1,12 @@
+# Azure AI Foundry SDK (for plate_reader.py)
+azure-ai-inference
+azure-core
+
+# Azure AI Vision SDK (for plate_reader_vision.py)
+azure-ai-vision-imageanalysis
+
+# Image processing
+Pillow
+
+# Environment variable management
+python-dotenv
