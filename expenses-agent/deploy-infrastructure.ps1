@@ -23,10 +23,10 @@
 # =============================================================================
 
 # Configuration - Modify these values as needed
-$ResourceGroup = "ai-lab2"
+$ResourceGroup = "expenses"
 $Location = "swedencentral"
-$AccountName = "fabferri-lab-resource2"
-$ProjectName = "fabferri-lab2"
+$AccountName = "expenses-resources"
+$ProjectName = "expenses-project"
 $ModelName = "gpt-4.1"
 $ModelVersion = "2025-04-14"
 $SkuCapacity = 10
