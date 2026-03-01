@@ -1,0 +1,10 @@
+mcp
+
+# package mcp with its cli extra (an optional set of additional dependencies that enable its command‑line interface features).
+mcp[cli]
+
+#FastAPI web framework (for building APIs/services).
+fastapi 
+
+#  popular HTTP client library
+requests
