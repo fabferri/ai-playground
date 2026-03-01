@@ -98,8 +98,6 @@ The key differences between classic HTTP streaming and MCP streaming:
 
 ## Streaming in MCP
 
-Ok, so you've seen some recommendations and comparisons so far on the difference between classical streaming and streaming in MCP. Let's get into detail exactly how you can leverage streaming in MCP.
-
 Understanding how streaming works within the MCP framework is essential for building responsive applications that provide real-time feedback to users during long-running operations.
 
 In MCP, streaming is not about sending the main response in chunks, but about sending **notifications** to the client while a tool is processing a request. These notifications can include progress updates, logs, or other events.
