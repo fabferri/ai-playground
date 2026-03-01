@@ -428,16 +428,11 @@ asyncio.run(main())
 
 ---
 
-## To-Do List
-
-- [ ] #1 Azure AI Foundry Agent Service SDK — implement and test managed agent runtime example
-- [ ] #2a AutoGen — implement and test multi-agent team example
-- [ ] #2b AutoGen — implement and test single agent example
-- [ ] #2c AutoGen — implement and test tool use (function calling) example
-- [ ] #3 Semantic Kernel — implement and test single-agent with plugins example
-
----
-
 ## Reference
 
 [Agent Framework](https://aka.ms/AgentFramework)
+
+---
+
+`Tags: Azure AI Foundry, agent` <br>
+`date: 01-03-2026` <br>
