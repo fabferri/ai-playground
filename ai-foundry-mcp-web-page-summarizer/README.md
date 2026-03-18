@@ -970,7 +970,7 @@ This project is licensed under the MIT License - See [LICENSE](../LICENSE) file 
 
 
 - `Tag: Azure container Apps, MCP` <br>
-- `version1.0` <br>
+- `version 1.0` <br>
 - `date: 18-03-2026`
 
 <!--Image References-->
