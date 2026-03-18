@@ -1,4 +1,4 @@
-# MCP Server on Azure Container Apps with AI Foundry Integration
+# Web Page Summarization Using Azure AI Foundry and MCP Server on Azure Container Apps
 
 ## 1. Introduction
 
