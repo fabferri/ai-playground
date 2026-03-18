@@ -1,0 +1,797 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "vnetName": {
+      "type": "string",
+      "defaultValue": "aca-vnet"
+    },
+    "acaSubnetName": {
+      "type": "string",
+      "defaultValue": "aca-subnet"
+    },
+    "acaSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.10.0.0/26"
+    },
+    "peSubnetName": {
+      "type": "string",
+      "defaultValue": "private-endpoints"
+    },
+    "peSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.10.0.64/27"
+    },
+    "subnet1Name": {
+      "type": "string",
+      "defaultValue": "subnet1"
+    },
+    "subnet1Prefix": {
+      "type": "string",
+      "defaultValue": "10.10.0.128/27"
+    },
+    "registryResourceId": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "foundryAccountName": {
+      "type": "string",
+      "defaultValue": "foundry-ai-acct"
+    },
+    "foundryCustomSubdomain": {
+      "type": "string",
+      "defaultValue": "[concat(parameters('foundryAccountName'), '-', uniqueString(subscription().id, resourceGroup().id))]"
+    },
+    "uamiName": {
+      "type": "string",
+      "defaultValue": "mcp-uami"
+    },
+    "modelDeploymentName": {
+      "type": "string",
+      "defaultValue": "gpt-5.4"
+    },
+    "enablePrivateEndpoints": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "createDnsZones": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "keyVaultResourceId": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "storageAccountResourceId": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "aiHubName": {
+      "type": "string",
+      "defaultValue": "ai-hub"
+    },
+    "aiProjectName": {
+      "type": "string",
+      "defaultValue": "ai-project"
+    },
+    "keyVaultName": {
+      "type": "string",
+      "defaultValue": "[concat('kv-', uniqueString(subscription().id, resourceGroup().id))]"
+    },
+    "keyVaultRbacPrincipalId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Object (principal) ID to assign Key Vault RBAC access. If empty, the user-assigned managed identity is used."
+      }
+    },
+    "keyVaultRbacRoleDefinitionId": {
+      "type": "string",
+      "defaultValue": "4633458b-17de-408a-b874-0445c86b69e6",
+      "metadata": {
+        "description": "Role definition ID for Key Vault RBAC assignment. Default is Key Vault Secrets Officer."
+      }
+    },
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "[concat('st', uniqueString(subscription().id, resourceGroup().id))]"
+    },
+    "appInsightsName": {
+      "type": "string",
+      "defaultValue": "ai-insights"
+    },
+    "logAnalyticsWorkspaceName": {
+      "type": "string",
+      "defaultValue": "law-ai"
+    },
+    "enableAIPublicNetworkAccess": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable public network access for Azure AI Hub and AI Project. Set to true to allow internet access, false for private access only."
+      }
+    },
+    "enableACRPublicNetworkAccess": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable public network access for Azure Container Registry. Set to true to allow internet access, false for private access only."
+      }
+    },
+    "enableCognitiveServicesPublicAccess": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable public network access for Azure Cognitive Services. Set to true to allow internet access, false for VNet-only access. VNet access is always enabled."
+      }
+    },
+    "restoreCognitiveServicesAccount": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Set to true to restore a soft-deleted Azure AI/Cognitive Services account with the same name."
+      }
+    }
+  },
+  "variables": {
+    "vnetId": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]",
+    "acaSubnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('acaSubnetName'))]",
+    "peSubnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('peSubnetName'))]",
+    "generatedAcrName": "[concat('acr', uniqueString(subscription().id, resourceGroup().id))]",
+    "registryResourceId": "[if(empty(parameters('registryResourceId')), resourceId('Microsoft.ContainerRegistry/registries', variables('generatedAcrName')), parameters('registryResourceId'))]",
+    "dnsZones": {
+      "cognitiveservices": "privatelink.cognitiveservices.azure.com",
+      "vault": "privatelink.vaultcore.azure.net",
+      "blob": "privatelink.blob.core.windows.net"
+    },
+    "acrPrivateDnsZone": "privatelink.azurecr.io",
+    "effectiveKeyVaultResourceId": "[if(empty(parameters('keyVaultResourceId')), resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), parameters('keyVaultResourceId'))]",
+    "keyVaultRbacRoleDefinitionResourceId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', parameters('keyVaultRbacRoleDefinitionId'))]",
+    "effectiveStorageAccountResourceId": "[if(empty(parameters('storageAccountResourceId')), resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), parameters('storageAccountResourceId'))]",
+    "logAnalyticsWorkspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName'))]",
+    "appInsightsId": "[resourceId('Microsoft.Insights/components', parameters('appInsightsName'))]",
+    "aiHubId": "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('aiHubName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2023-09-01",
+      "name": "[parameters('vnetName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "10.10.0.0/24"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[parameters('acaSubnetName')]",
+            "properties": {
+              "addressPrefix": "[parameters('acaSubnetPrefix')]",
+              "serviceEndpoints": [
+                {
+                  "service": "Microsoft.CognitiveServices"
+                }
+              ],
+              "delegations": [
+                {
+                  "name": "delegation",
+                  "properties": {
+                    "serviceName": "Microsoft.App/environments"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "[parameters('peSubnetName')]",
+            "properties": {
+              "addressPrefix": "[parameters('peSubnetPrefix')]"
+            }
+          },
+          {
+            "name": "[parameters('subnet1Name')]",
+            "properties": {
+              "addressPrefix": "[parameters('subnet1Prefix')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('dnsZones').cognitiveservices]",
+      "location": "global",
+      "condition": "[parameters('createDnsZones')]",
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+      "apiVersion": "2020-06-01",
+      "name": "[concat(variables('dnsZones').cognitiveservices, '/link-to-vnet')]",
+      "location": "global",
+      "condition": "[parameters('createDnsZones')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', variables('dnsZones').cognitiveservices)]",
+        "[variables('vnetId')]"
+      ],
+      "properties": {
+        "registrationEnabled": false,
+        "virtualNetwork": {
+          "id": "[variables('vnetId')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('dnsZones').vault]",
+      "location": "global",
+      "condition": "[parameters('createDnsZones')]",
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+      "apiVersion": "2020-06-01",
+      "name": "[concat(variables('dnsZones').vault, '/link-to-vnet')]",
+      "location": "global",
+      "condition": "[parameters('createDnsZones')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', variables('dnsZones').vault)]",
+        "[variables('vnetId')]"
+      ],
+      "properties": {
+        "registrationEnabled": false,
+        "virtualNetwork": {
+          "id": "[variables('vnetId')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('dnsZones').blob]",
+      "location": "global",
+      "condition": "[parameters('createDnsZones')]",
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+      "apiVersion": "2020-06-01",
+      "name": "[concat(variables('dnsZones').blob, '/link-to-vnet')]",
+      "location": "global",
+      "condition": "[parameters('createDnsZones')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', variables('dnsZones').blob)]",
+        "[variables('vnetId')]"
+      ],
+      "properties": {
+        "registrationEnabled": false,
+        "virtualNetwork": {
+          "id": "[variables('vnetId')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('acrPrivateDnsZone')]",
+      "location": "global",
+      "condition": "[parameters('createDnsZones')]",
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+      "apiVersion": "2020-06-01",
+      "name": "[concat(variables('acrPrivateDnsZone'), '/link-to-vnet')]",
+      "location": "global",
+      "condition": "[parameters('createDnsZones')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', variables('acrPrivateDnsZone'))]",
+        "[variables('vnetId')]"
+      ],
+      "properties": {
+        "registrationEnabled": false,
+        "virtualNetwork": {
+          "id": "[variables('vnetId')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "apiVersion": "2023-01-31",
+      "name": "[parameters('uamiName')]",
+      "location": "[parameters('location')]"
+    },
+    {
+      "type": "Microsoft.ContainerRegistry/registries",
+      "apiVersion": "2023-01-01-preview",
+      "name": "[variables('generatedAcrName')]",
+      "location": "[parameters('location')]",
+      "condition": "[empty(parameters('registryResourceId'))]",
+      "sku": {
+        "name": "Premium"
+      },
+      "properties": {
+        "adminUserEnabled": false,
+        "publicNetworkAccess": "[if(parameters('enableACRPublicNetworkAccess'), 'Enabled', 'Disabled')]",
+        "networkRuleBypassOptions": "AzureServices"
+      }
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2023-05-01",
+      "name": "[parameters('foundryAccountName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[variables('vnetId')]"
+      ],
+      "kind": "AIServices",
+      "sku": {
+        "name": "S0"
+      },
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "restore": "[parameters('restoreCognitiveServicesAccount')]",
+        "customSubDomainName": "[parameters('foundryCustomSubdomain')]",
+        "publicNetworkAccess": "[if(parameters('enableCognitiveServicesPublicAccess'), 'Enabled', 'Disabled')]",
+        "networkAcls": {
+          "defaultAction": "[if(parameters('enableCognitiveServicesPublicAccess'), 'Allow', 'Deny')]",
+          "virtualNetworkRules": [
+            {
+              "id": "[variables('acaSubnetId')]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints",
+      "apiVersion": "2023-09-01",
+      "name": "pe-cognitiveservices",
+      "location": "[parameters('location')]",
+      "condition": "[parameters('enablePrivateEndpoints')]",
+      "dependsOn": [
+        "[variables('vnetId')]",
+        "[resourceId('Microsoft.CognitiveServices/accounts', parameters('foundryAccountName'))]"
+      ],
+      "properties": {
+        "subnet": {
+          "id": "[variables('peSubnetId')]"
+        },
+        "privateLinkServiceConnections": [
+          {
+            "name": "pe-cognitiveservices-pls",
+            "properties": {
+              "privateLinkServiceId": "[resourceId('Microsoft.CognitiveServices/accounts', parameters('foundryAccountName'))]",
+              "groupIds": [
+                "account"
+              ]
+            }
+          }
+        ]
+      },
+      "resources": [
+        {
+          "type": "privateDnsZoneGroups",
+          "apiVersion": "2020-11-01",
+          "name": "pdz-group",
+          "condition": "[parameters('createDnsZones')]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Network/privateEndpoints', 'pe-cognitiveservices')]"
+          ],
+          "properties": {
+            "privateDnsZoneConfigs": [
+              {
+                "name": "zone",
+                "properties": {
+                  "privateDnsZoneId": "[resourceId('Microsoft.Network/privateDnsZones', variables('dnsZones').cognitiveservices)]"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints",
+      "apiVersion": "2023-09-01",
+      "name": "pe-acr",
+      "location": "[parameters('location')]",
+      "condition": "[and(parameters('enablePrivateEndpoints'), not(empty(variables('registryResourceId'))))]",
+      "dependsOn": [
+        "[variables('vnetId')]",
+        "[variables('registryResourceId')]"
+      ],
+      "properties": {
+        "subnet": {
+          "id": "[variables('peSubnetId')]"
+        },
+        "privateLinkServiceConnections": [
+          {
+            "name": "pe-acr-pls",
+            "properties": {
+              "privateLinkServiceId": "[variables('registryResourceId')]",
+              "groupIds": [
+                "registry"
+              ]
+            }
+          }
+        ]
+      },
+      "resources": [
+        {
+          "type": "privateDnsZoneGroups",
+          "apiVersion": "2020-11-01",
+          "name": "pdz-group",
+          "condition": "[and(parameters('createDnsZones'), parameters('enablePrivateEndpoints'))]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Network/privateEndpoints', 'pe-acr')]"
+          ],
+          "properties": {
+            "privateDnsZoneConfigs": [
+              {
+                "name": "zone",
+                "properties": {
+                  "privateDnsZoneId": "[resourceId('Microsoft.Network/privateDnsZones', variables('acrPrivateDnsZone'))]"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints",
+      "apiVersion": "2023-09-01",
+      "name": "pe-keyvault",
+      "location": "[parameters('location')]",
+      "condition": "[parameters('enablePrivateEndpoints')]",
+      "dependsOn": [
+        "[variables('vnetId')]",
+        "[variables('effectiveKeyVaultResourceId')]"
+      ],
+      "properties": {
+        "subnet": {
+          "id": "[variables('peSubnetId')]"
+        },
+        "privateLinkServiceConnections": [
+          {
+            "name": "pe-keyvault-pls",
+            "properties": {
+              "privateLinkServiceId": "[variables('effectiveKeyVaultResourceId')]",
+              "groupIds": [
+                "vault"
+              ]
+            }
+          }
+        ]
+      },
+      "resources": [
+        {
+          "type": "privateDnsZoneGroups",
+          "apiVersion": "2020-11-01",
+          "name": "pdz-group",
+          "condition": "[and(parameters('createDnsZones'), parameters('enablePrivateEndpoints'))]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Network/privateEndpoints', 'pe-keyvault')]"
+          ],
+          "properties": {
+            "privateDnsZoneConfigs": [
+              {
+                "name": "zone",
+                "properties": {
+                  "privateDnsZoneId": "[resourceId('Microsoft.Network/privateDnsZones', variables('dnsZones').vault)]"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints",
+      "apiVersion": "2023-09-01",
+      "name": "pe-storage-blob",
+      "location": "[parameters('location')]",
+      "condition": "[parameters('enablePrivateEndpoints')]",
+      "dependsOn": [
+        "[variables('vnetId')]",
+        "[variables('effectiveStorageAccountResourceId')]"
+      ],
+      "properties": {
+        "subnet": {
+          "id": "[variables('peSubnetId')]"
+        },
+        "privateLinkServiceConnections": [
+          {
+            "name": "pe-storage-blob-pls",
+            "properties": {
+              "privateLinkServiceId": "[variables('effectiveStorageAccountResourceId')]",
+              "groupIds": [
+                "blob"
+              ]
+            }
+          }
+        ]
+      },
+      "resources": [
+        {
+          "type": "privateDnsZoneGroups",
+          "apiVersion": "2020-11-01",
+          "name": "pdz-group",
+          "condition": "[and(parameters('createDnsZones'), parameters('enablePrivateEndpoints'))]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Network/privateEndpoints', 'pe-storage-blob')]"
+          ],
+          "properties": {
+            "privateDnsZoneConfigs": [
+              {
+                "name": "zone",
+                "properties": {
+                  "privateDnsZoneId": "[resourceId('Microsoft.Network/privateDnsZones', variables('dnsZones').blob)]"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2023-02-01",
+      "name": "[parameters('keyVaultName')]",
+      "location": "[parameters('location')]",
+      "condition": "[empty(parameters('keyVaultResourceId'))]",
+      "properties": {
+        "sku": {
+          "family": "A",
+          "name": "standard"
+        },
+        "tenantId": "[subscription().tenantId]",
+        "enableRbacAuthorization": true,
+        "enableSoftDelete": true,
+        "enablePurgeProtection": true,
+        "publicNetworkAccess": "Disabled",
+        "networkAcls": {
+          "defaultAction": "Deny",
+          "bypass": "AzureServices"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(variables('effectiveKeyVaultResourceId'), parameters('keyVaultRbacPrincipalId'), parameters('keyVaultRbacRoleDefinitionId'), parameters('uamiName'))]",
+      "scope": "[variables('effectiveKeyVaultResourceId')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('uamiName'))]",
+        "[variables('effectiveKeyVaultResourceId')]"
+      ],
+      "properties": {
+        "roleDefinitionId": "[variables('keyVaultRbacRoleDefinitionResourceId')]",
+        "principalId": "[if(empty(parameters('keyVaultRbacPrincipalId')), reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('uamiName')), '2023-01-31').principalId, parameters('keyVaultRbacPrincipalId'))]",
+        "principalType": "ServicePrincipal"
+      }
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(variables('registryResourceId'), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('uamiName')), 'acrpull')]",
+      "scope": "[variables('registryResourceId')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('uamiName'))]",
+        "[variables('registryResourceId')]"
+      ],
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('uamiName')), '2023-01-31').principalId]",
+        "principalType": "ServicePrincipal"
+      }
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', parameters('foundryAccountName')), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('uamiName')), 'openaidatauser')]",
+      "scope": "[resourceId('Microsoft.CognitiveServices/accounts', parameters('foundryAccountName'))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('uamiName'))]",
+        "[resourceId('Microsoft.CognitiveServices/accounts', parameters('foundryAccountName'))]"
+      ],
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')]",
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('uamiName')), '2023-01-31').principalId]",
+        "principalType": "ServicePrincipal"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-01-01",
+      "name": "[parameters('storageAccountName')]",
+      "location": "[parameters('location')]",
+      "condition": "[empty(parameters('storageAccountResourceId'))]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "accessTier": "Hot",
+        "supportsHttpsTrafficOnly": true,
+        "minimumTlsVersion": "TLS1_2",
+        "publicNetworkAccess": "Disabled",
+        "networkAcls": {
+          "defaultAction": "Deny",
+          "bypass": "AzureServices"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2022-10-01",
+      "name": "[parameters('logAnalyticsWorkspaceName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "sku": {
+          "name": "PerGB2018"
+        },
+        "retentionInDays": 30
+      }
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[parameters('appInsightsName')]",
+      "location": "[parameters('location')]",
+      "kind": "web",
+      "dependsOn": [
+        "[variables('logAnalyticsWorkspaceId')]"
+      ],
+      "properties": {
+        "Application_Type": "web",
+        "WorkspaceResourceId": "[variables('logAnalyticsWorkspaceId')]",
+        "publicNetworkAccessForIngestion": "Enabled",
+        "publicNetworkAccessForQuery": "Enabled"
+      }
+    },
+    {
+      "type": "Microsoft.MachineLearningServices/workspaces",
+      "apiVersion": "2024-04-01",
+      "name": "[parameters('aiHubName')]",
+      "location": "[parameters('location')]",
+      "kind": "Hub",
+      "dependsOn": [
+        "[variables('effectiveKeyVaultResourceId')]",
+        "[variables('effectiveStorageAccountResourceId')]",
+        "[variables('appInsightsId')]",
+        "[resourceId('Microsoft.CognitiveServices/accounts', parameters('foundryAccountName'))]"
+      ],
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "sku": {
+        "name": "Basic",
+        "tier": "Basic"
+      },
+      "properties": {
+        "friendlyName": "[parameters('aiHubName')]",
+        "storageAccount": "[variables('effectiveStorageAccountResourceId')]",
+        "keyVault": "[variables('effectiveKeyVaultResourceId')]",
+        "applicationInsights": "[variables('appInsightsId')]",
+        "publicNetworkAccess": "[if(parameters('enableAIPublicNetworkAccess'), 'Enabled', 'Disabled')]",
+        "managedNetwork": {
+          "isolationMode": "AllowInternetOutbound"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.MachineLearningServices/workspaces",
+      "apiVersion": "2024-04-01",
+      "name": "[parameters('aiProjectName')]",
+      "location": "[parameters('location')]",
+      "kind": "Project",
+      "dependsOn": [
+        "[variables('aiHubId')]"
+      ],
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "sku": {
+        "name": "Basic",
+        "tier": "Basic"
+      },
+      "properties": {
+        "friendlyName": "[parameters('aiProjectName')]",
+        "hubResourceId": "[variables('aiHubId')]",
+        "publicNetworkAccess": "[if(parameters('enableAIPublicNetworkAccess'), 'Enabled', 'Disabled')]"
+      }
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts/deployments",
+      "apiVersion": "2023-05-01",
+      "name": "[concat(parameters('foundryAccountName'), '/', parameters('modelDeploymentName'))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', parameters('foundryAccountName'))]",
+        "[resourceId('Microsoft.Network/privateEndpoints', 'pe-cognitiveservices')]"
+      ],
+      "sku": {
+        "name": "GlobalStandard",
+        "capacity": 10
+      },
+      "properties": {
+        "model": {
+          "format": "OpenAI",
+            "name": "gpt-5.4",
+            "version": "2026-03-05"
+        },
+        "versionUpgradeOption": "OnceNewDefaultVersionAvailable",
+        "raiPolicyName": "Microsoft.Default"
+      }
+    }
+  ],
+  "outputs": {
+    "foundryAccountEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', parameters('foundryAccountName')), '2023-05-01').endpoint]"
+    },
+    "foundryAccountName": {
+      "type": "string",
+      "value": "[parameters('foundryAccountName')]"
+    },
+    "acaSubnetId": {
+      "type": "string",
+      "value": "[variables('acaSubnetId')]"
+    },
+    "privateEndpointSubnetId": {
+      "type": "string",
+      "value": "[variables('peSubnetId')]"
+    },
+    "generatedAcrName": {
+      "type": "string",
+      "value": "[variables('generatedAcrName')]"
+    },
+    "registryResourceId": {
+      "type": "string",
+      "value": "[variables('registryResourceId')]"
+    },
+    "aiHubName": {
+      "type": "string",
+      "value": "[parameters('aiHubName')]"
+    },
+    "aiProjectName": {
+      "type": "string",
+      "value": "[parameters('aiProjectName')]"
+    },
+    "aiHubId": {
+      "type": "string",
+      "value": "[variables('aiHubId')]"
+    },
+    "aiProjectId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('aiProjectName'))]"
+    },
+    "keyVaultName": {
+      "type": "string",
+      "value": "[if(empty(parameters('keyVaultResourceId')), parameters('keyVaultName'), '')]"
+    },
+    "storageAccountName": {
+      "type": "string",
+      "value": "[if(empty(parameters('storageAccountResourceId')), parameters('storageAccountName'), '')]"
+    },
+    "modelDeploymentName": {
+      "type": "string",
+      "value": "[parameters('modelDeploymentName')]"
+    },
+    "modelDeploymentId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.CognitiveServices/accounts/deployments', parameters('foundryAccountName'), parameters('modelDeploymentName'))]"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "acaSubnetId": {
+      "value": "/subscriptions/43467485-b19a-4b68-ac94-c9a8e980ca7f/resourceGroups/mcp-test14/providers/Microsoft.Network/virtualNetworks/aca-vnet/subnets/aca-subnet"
+    },
+    "registryServer": {
+      "value": "acrlqjuydugvmsl4.azurecr.io"
+    },
+    "serverContainerImage": {
+      "value": "mcp-server:latest"
+    },
+    "clientContainerImage": {
+      "value": "mcp-client:latest"
+    },
+    "foundryAccountName": {
+      "value": "foundry-ai-acct"
+    },
+    "modelDeploymentName": {
+      "value": "gpt-5.4"
+    },
+    "internalEnvironment": {
+      "value": true
+    }
+  }
+}

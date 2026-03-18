@@ -1,0 +1,329 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "envName": {
+      "type": "string",
+      "defaultValue": "aca-env"
+    },
+    "acaSubnetId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the delegated ACA infrastructure subnet."
+      }
+    },
+    "uamiName": {
+      "type": "string",
+      "defaultValue": "mcp-uami"
+    },
+    "containerAppName": {
+      "type": "string",
+      "defaultValue": "mcp-foundry-app"
+    },
+    "clientAppName": {
+      "type": "string",
+      "defaultValue": "mcp-client-app"
+    },
+    "serverContainerImage": {
+      "type": "string",
+      "metadata": {
+        "description": "Server image. Accepts either full image (<acr>.azurecr.io/repo:tag) or repo:tag."
+      }
+    },
+    "clientContainerImage": {
+      "type": "string",
+      "metadata": {
+        "description": "Client image. Accepts either full image (<acr>.azurecr.io/repo:tag) or repo:tag."
+      }
+    },
+    "registryServer": {
+      "type": "string",
+      "metadata": {
+        "description": "ACR login server (for example myacr.azurecr.io)."
+      }
+    },
+    "foundryAccountName": {
+      "type": "string",
+      "defaultValue": "foundry-ai-acct"
+    },
+    "modelDeploymentName": {
+      "type": "string",
+      "defaultValue": "gpt-5.4"
+    },
+    "internalEnvironment": {
+      "type": "bool",
+      "defaultValue": false
+    }
+  },
+  "variables": {
+    "envId": "[resourceId('Microsoft.App/managedEnvironments', parameters('envName'))]",
+    "uamiId": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('uamiName'))]",
+    "generatedAcrName": "[concat('acr', uniqueString(subscription().id, resourceGroup().id))]",
+    "registryServer": "[if(empty(parameters('registryServer')), concat(variables('generatedAcrName'), '.azurecr.io'), parameters('registryServer'))]",
+    "serverContainerImage": "[if(contains(parameters('serverContainerImage'), '/'), parameters('serverContainerImage'), concat(variables('registryServer'), '/', parameters('serverContainerImage')))]",
+    "clientContainerImage": "[if(contains(parameters('clientContainerImage'), '/'), parameters('clientContainerImage'), concat(variables('registryServer'), '/', parameters('clientContainerImage')))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.App/managedEnvironments",
+      "apiVersion": "2024-03-01",
+      "name": "[parameters('envName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "vnetConfiguration": {
+          "infrastructureSubnetId": "[parameters('acaSubnetId')]",
+          "internal": "[parameters('internalEnvironment')]"
+        },
+        "workloadProfiles": [
+          {
+            "name": "Consumption",
+            "workloadProfileType": "Consumption"
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.App/containerApps",
+      "apiVersion": "2024-03-01",
+      "name": "[parameters('containerAppName')]",
+      "location": "[parameters('location')]",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[variables('uamiId')]": {}
+        }
+      },
+      "properties": {
+        "managedEnvironmentId": "[variables('envId')]",
+        "configuration": {
+          "ingress": {
+            "external": "[not(parameters('internalEnvironment'))]",
+            "targetPort": 8000
+          },
+          "registries": [
+            {
+              "server": "[variables('registryServer')]",
+              "identity": "[variables('uamiId')]"
+            }
+          ],
+          "secrets": []
+        },
+        "template": {
+          "containers": [
+            {
+              "name": "server",
+              "image": "[variables('serverContainerImage')]",
+              "env": [
+                {
+                  "name": "PROJECT_ENDPOINT",
+                  "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', parameters('foundryAccountName')), '2023-05-01').endpoint]"
+                },
+                {
+                  "name": "MODEL_DEPLOYMENT_NAME",
+                  "value": "[parameters('modelDeploymentName')]"
+                },
+                {
+                  "name": "AZURE_CLIENT_ID",
+                  "value": "[reference(variables('uamiId'), '2023-01-31').clientId]"
+                },
+                {
+                  "name": "ENABLE_JS_RENDER",
+                  "value": "true"
+                },
+                {
+                  "name": "JS_RENDER_TIMEOUT",
+                  "value": "20"
+                }
+              ],
+              "probes": [
+                {
+                  "type": "liveness",
+                  "httpGet": {
+                    "path": "/health",
+                    "port": 8000
+                  },
+                  "initialDelaySeconds": 10,
+                  "periodSeconds": 30,
+                  "failureThreshold": 5,
+                  "timeoutSeconds": 5
+                }
+              ]
+            }
+          ],
+          "scale": {
+            "minReplicas": 1,
+            "maxReplicas": 2
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.App/managedEnvironments', parameters('envName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.App/containerApps",
+      "apiVersion": "2024-03-01",
+      "name": "[parameters('clientAppName')]",
+      "location": "[parameters('location')]",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[variables('uamiId')]": {}
+        }
+      },
+      "properties": {
+        "managedEnvironmentId": "[variables('envId')]",
+        "configuration": {
+          "ingress": {
+            "external": true,
+            "targetPort": 8080,
+            "transport": "http"
+          },
+          "registries": [
+            {
+              "server": "[variables('registryServer')]",
+              "identity": "[variables('uamiId')]"
+            }
+          ],
+          "secrets": []
+        },
+        "template": {
+          "containers": [
+            {
+              "name": "client",
+              "image": "[variables('clientContainerImage')]",
+              "env": [
+                {
+                  "name": "MCP_SERVER_URL",
+                  "value": "[concat('https://', reference(resourceId('Microsoft.App/containerApps', parameters('containerAppName'))).configuration.ingress.fqdn, '/mcp')]"
+                }
+              ],
+              "probes": [
+                {
+                  "type": "liveness",
+                  "httpGet": {
+                    "path": "/health",
+                    "port": 8080
+                  },
+                  "initialDelaySeconds": 5,
+                  "periodSeconds": 10
+                }
+              ]
+            }
+          ],
+          "scale": {
+            "minReplicas": 1,
+            "maxReplicas": 2
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.App/containerApps', parameters('containerAppName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "aca-private-dns",
+      "condition": "[parameters('internalEnvironment')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.App/managedEnvironments', parameters('envName'))]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "expressionEvaluationOptions": {
+          "scope": "Inner"
+        },
+        "parameters": {
+          "dnsZoneName": {
+            "value": "[reference(resourceId('Microsoft.App/managedEnvironments', parameters('envName')), '2024-03-01').defaultDomain]"
+          },
+          "staticIp": {
+            "value": "[reference(resourceId('Microsoft.App/managedEnvironments', parameters('envName')), '2024-03-01').staticIp]"
+          },
+          "vnetId": {
+            "value": "[first(split(parameters('acaSubnetId'), '/subnets/'))]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {
+            "dnsZoneName": {
+              "type": "string"
+            },
+            "staticIp": {
+              "type": "string"
+            },
+            "vnetId": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/privateDnsZones",
+              "apiVersion": "2020-06-01",
+              "name": "[parameters('dnsZoneName')]",
+              "location": "global",
+              "properties": {}
+            },
+            {
+              "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+              "apiVersion": "2020-06-01",
+              "name": "[concat(parameters('dnsZoneName'), '/link-to-vnet')]",
+              "location": "global",
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/privateDnsZones', parameters('dnsZoneName'))]"
+              ],
+              "properties": {
+                "registrationEnabled": false,
+                "virtualNetwork": {
+                  "id": "[parameters('vnetId')]"
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Network/privateDnsZones/A",
+              "apiVersion": "2020-06-01",
+              "name": "[concat(parameters('dnsZoneName'), '/*')]",
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/privateDnsZones', parameters('dnsZoneName'))]"
+              ],
+              "properties": {
+                "ttl": 300,
+                "aRecords": [
+                  {
+                    "ipv4Address": "[parameters('staticIp')]"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "containerAppFqdn": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('containerAppName'))).configuration.ingress.fqdn]"
+    },
+    "containerAppUrl": {
+      "type": "string",
+      "value": "[concat('https://', reference(resourceId('Microsoft.App/containerApps', parameters('containerAppName'))).configuration.ingress.fqdn, '/mcp')]"
+    },
+    "clientAppFqdn": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('clientAppName'))).configuration.ingress.fqdn]"
+    },
+    "clientAppUrl": {
+      "type": "string",
+      "value": "[concat('https://', reference(resourceId('Microsoft.App/containerApps', parameters('clientAppName'))).configuration.ingress.fqdn)]"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements-client.txt ./
+RUN pip install --no-cache-dir -r requirements-client.txt
+
+COPY client.py ./
+
+# Client runs on port 8080
+EXPOSE 8080
+
+# Configure Python environment
+ENV PYTHONUNBUFFERED=1
+
+# Environment variable for MCP server URL
+# Default assumes both apps are in the same ACA environment
+ENV MCP_SERVER_URL=http://mcp-foundry-app:8000/mcp
+
+CMD ["python", "client.py"]

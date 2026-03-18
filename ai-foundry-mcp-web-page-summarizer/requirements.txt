@@ -1,0 +1,17 @@
+# Core MCP and web framework dependencies
+fastmcp>=3.1.0
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+httpx>=0.27.0
+python-dotenv>=1.0.0
+
+# Azure AI and authentication
+azure-ai-projects>=1.0.0b1
+azure-identity>=1.15.0
+
+# Content extraction and text processing
+trafilatura>=1.6.0  # Extracts main article content from HTML
+markdownify>=0.11.0  # Converts HTML to markdown for cleaner text
+
+# Optional but recommended for better logging
+coloredlogs>=15.0
