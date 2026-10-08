@@ -14,21 +14,21 @@
 # Configuration Variables - Customize these values
 # -----------------------------------------------------------------------------
 $resourceGroup = "foundry-agent-200"
-$location = "swedencentral"                                    # Supported regions: eastus, westus, etc.
+$location = "swedencentral"                    # Supported regions: eastus, westus, etc.
 
 # Account Kind: Choose between "AIHub" or "AIServices"
 # - AIHub: Creates an AI Hub account (integrates with Azure ML workspace)
 # - AIServices: Creates an AI Services account (standalone Foundry service)
-$accountKind = "AIServices"                             # Options: "AIHub" or "AIServices"
+$accountKind = "AIServices"                    # Options: "AIHub" or "AIServices"
 
 # Generate deterministic random number based on resource group name hash
 $rgHash = [Math]::Abs($resourceGroup.GetHashCode()) % 99999
 
 # Set account name prefix based on account kind
 if ($accountKind -eq "AIHub") {
-    $accountName = "ai-hub-$rgHash"                     # Must be globally unique
+    $accountName = "ai-hub-$rgHash"              # Must be globally unique
 } else {
-    $accountName = "ai-services-$rgHash"                 # Must be globally unique
+    $accountName = "ai-services-$rgHash"         # Must be globally unique
 }
 
 $projectName = "prj-multiagent"
